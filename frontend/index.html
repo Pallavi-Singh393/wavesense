@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WaveSense Heatmap Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header card">
+        <h1>WaveSense Heatmap Dashboard</h1>
+        <p>Live weather records with automatic Heatwave and Coldwave detection</p>
+      </header>
+
+      <section class="card">
+        <h2>WaveSense Heatmap Dashboard</h2>
+        <div id="map" class="india-heatmap"></div>
+      </section>
+
+      <section class="card">
+        <h2>Temperature Overview</h2>
+        <div id="weatherCards" class="weather-cards">
+          <p class="loading-text">Loading weather data...</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Weather Data</h2>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>District</th>
+              <th>Latitude</th>
+              <th>Longitude</th>
+              <th>Temperature (°C)</th>
+              <th>Humidity (%)</th>
+              <th>Wave Status</th>
+            </tr>
+          </thead>
+          <tbody id="weatherTableBody">
+            <tr>
+              <td colspan="6">Loading weather data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </main>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
