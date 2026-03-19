@@ -97,3 +97,4 @@ Then open: `http://127.0.0.1:5500`
 - The backend reads and classifies CSV data in `backend/wave_detector.py`
 - The API routes are defined in `backend/app.py`
 - Frontend API calls and chart rendering are in `frontend/script.js`
+# wavesense
