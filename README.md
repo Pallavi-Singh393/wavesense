@@ -38,14 +38,15 @@ wavesense/
 
 ## API Endpoints
 
-- GET /weather
-- GET /heatwaves
-- GET /coldwaves
-- GET /cities
+- GET /data
 
-All endpoints also support an optional city filter:
-
-- Example: `/weather?city=Delhi`
+Returns live NCR-focused weather records fetched from OpenWeatherMap for:
+- Delhi
+- Noida
+- Gurugram
+- Faridabad
+- Ghaziabad
+- Greater Noida
 
 ## Setup Instructions
 
@@ -60,10 +61,18 @@ source .venv/bin/activate
 ### 2. Install dependencies
 
 ```bash
-pip install flask pandas
+pip install flask flask-cors pandas
 ```
 
-### 3. Run backend server
+### 3. Configure OpenWeatherMap API key
+
+Create an API key from OpenWeatherMap and export it before running backend:
+
+```bash
+export OPENWEATHERMAP_API_KEY="your_api_key_here"
+```
+
+### 4. Run backend server
 
 ```bash
 cd backend
@@ -72,7 +81,7 @@ python app.py
 
 Backend will run at: `http://127.0.0.1:5000`
 
-### 4. Open frontend dashboard
+### 5. Open frontend dashboard
 
 Option A (quick): open `frontend/index.html` directly in your browser.
 

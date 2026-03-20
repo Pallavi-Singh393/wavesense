@@ -4,19 +4,51 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WaveSense Heatmap Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   </head>
   <body>
     <main class="container">
+      <section id="alertBanner" class="alert-banner" hidden>
+        <p id="alertMessage">⚠️ Heatwave Alert</p>
+      </section>
+
       <header class="header card">
-        <h1>WaveSense Heatmap Dashboard</h1>
-        <p>Live weather records with automatic Heatwave and Coldwave detection</p>
+        <h1>WaveSense Dashboard</h1>
+        <p>NCR-focused live weather, heatwave highlights, and temperature heatmap</p>
       </header>
 
+      <section class="summary-grid" aria-label="NCR summary">
+        <article class="card summary-card">
+          <p class="summary-label">Region</p>
+          <h2 class="summary-value">National Capital Region (NCR)</h2>
+        </article>
+        <article class="card summary-card">
+          <p class="summary-label">Highest Temperature</p>
+          <h2 id="highestTempValue" class="summary-value">--</h2>
+        </article>
+        <article class="card summary-card">
+          <p class="summary-label">Heatwave Districts</p>
+          <h2 id="heatwaveCountValue" class="summary-value">0</h2>
+        </article>
+      </section>
+
       <section class="card">
-        <h2>WaveSense Heatmap Dashboard</h2>
+        <h2>NCR Heatmap</h2>
         <div id="map" class="india-heatmap"></div>
+      </section>
+
+      <section class="card">
+        <h2>Temperature Trend Prediction</h2>
+        <div class="trend-chart-wrap">
+          <canvas id="trendChart" aria-label="Current vs predicted temperature trend"></canvas>
+        </div>
       </section>
 
       <section class="card">
@@ -36,12 +68,13 @@
               <th>Longitude</th>
               <th>Temperature (°C)</th>
               <th>Humidity (%)</th>
+              <th>Predicted Next (°C)</th>
               <th>Wave Status</th>
             </tr>
           </thead>
           <tbody id="weatherTableBody">
             <tr>
-              <td colspan="6">Loading weather data...</td>
+              <td colspan="7">Loading weather data...</td>
             </tr>
           </tbody>
         </table>
@@ -51,6 +84,7 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
