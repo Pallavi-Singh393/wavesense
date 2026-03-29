@@ -1,109 +1,88 @@
-# WaveSense
+# 🌊 WaveSense – NCR Smart Weather Intelligence Dashboard
 
-WaveSense is a beginner-friendly full-stack climate analytics project.
-It detects Heat Waves and Cold Waves from weather data and shows insights in a dashboard.
+🚀 A real-time + predictive weather dashboard that visualizes heatwave risks across NCR using live and forecast data.
 
-## Project Structure
+---
 
-```text
-wavesense/
-│
-├── backend/
-│   ├── app.py
-│   ├── wave_detector.py
-│
-├── data/
-│   └── weather_data.csv
-│
-├── frontend/
-│   ├── index.html
-│   ├── style.css
-│   ├── script.js
-│
-└── README.md
-```
+## 🔥 Live Features
 
-## Tech Stack
+- 🌡 Real-time weather data (OpenWeather API)
+- 🔮 Forecast-based heatwave prediction system
+- 🗺 Interactive NCR map (Leaflet.js)
+- 🔥 Temperature heatmap visualization
+- 🎯 Animated pulse markers for high-risk zones
+- 📊 Smart dashboard (stats + charts)
+- ⚠ Alert system for upcoming heatwaves
+- 🔄 Auto-refresh for real-time feel
 
-- Backend: Flask + Pandas
-- Frontend: HTML, CSS, JavaScript
-- Charts: Chart.js
+---
 
-## Detection Rules
+## 🧠 How It Works
 
-- Heat Wave: temperature >= 40°C
-- Severe Heat Wave: temperature >= 45°C
-- Cold Wave: temperature <= 10°C
-- Otherwise: Normal
+- Fetches current + forecast weather data
+- Analyzes next 5 time intervals (3-hour gaps)
+- Calculates average temperature
+- Predicts risk levels:
 
-## API Endpoints
+| Condition | Prediction |
+|----------|-----------|
+| > 38°C | 🔴 Heatwave Likely |
+| 30-38°C | 🟠 Warning |
+| < 30°C | 🟢 Normal |
 
-- GET /data
+---
 
-Returns live NCR-focused weather records fetched from OpenWeatherMap for:
-- Delhi
-- Noida
-- Gurugram
-- Faridabad
-- Ghaziabad
-- Greater Noida
+## 🗺 Visualization Intelligence
 
-## Setup Instructions
+- Heatmap shows temperature intensity across regions
+- Animated markers highlight critical zones
+- Users can instantly identify high-risk areas without reading data
 
-### 1. Create and activate virtual environment (recommended)
+---
 
-```bash
-cd wavesense
-python3 -m venv .venv
-source .venv/bin/activate
-```
+## 🛠 Tech Stack
 
-### 2. Install dependencies
+### Frontend
 
-```bash
-pip install flask flask-cors pandas
-```
+- HTML
+- CSS
+- JavaScript
+- Leaflet.js + Leaflet.heat
 
-### 3. Configure OpenWeatherMap API key
+### Backend
 
-Create an API key from OpenWeatherMap and export it before running backend:
+- Python (Flask)
+- OpenWeather API
 
-```bash
-export OPENWEATHERMAP_API_KEY="your_api_key_here"
-```
+---
 
-### 4. Run backend server
+## 📸 Project Preview
 
-```bash
-cd backend
-python app.py
-```
+![WaveSense Dashboard](./assets/wavesense-dashboard.png)
 
-Backend will run at: `http://127.0.0.1:5000`
+---
 
-### 5. Open frontend dashboard
+## 🚀 Future Improvements
 
-Option A (quick): open `frontend/index.html` directly in your browser.
+- AI-based risk scoring (0-100)
+- Historical trend comparison
+- Smart browser notifications
+- Mobile responsive UI
 
-Option B (recommended local server):
+---
 
-```bash
-cd frontend
-python3 -m http.server 5500
-```
+## 💼 Why This Project?
 
-Then open: `http://127.0.0.1:5500`
+This project demonstrates:
 
-## What You Can Do in Dashboard
+- API integration
+- Data analysis + prediction logic
+- Real-time systems design
+- Data visualization
+- UI/UX thinking
 
-- Select a city
-- View temperature trend chart
-- See heat wave/cold wave alerts
-- View event summary by city
+---
 
-## Beginner Notes
+## 👩‍💻 Author
 
-- The backend reads and classifies CSV data in `backend/wave_detector.py`
-- The API routes are defined in `backend/app.py`
-- Frontend API calls and chart rendering are in `frontend/script.js`
-# wavesense
+**Pallavi Singh**
