@@ -58,7 +58,7 @@
 
 ## 📸 Project Preview
 
-![WaveSense Dashboard](./assets/wavesense-dashboard.png)
+![WaveSense Dashboard](./wavesense-dashboard.png)
 
 ---
 
