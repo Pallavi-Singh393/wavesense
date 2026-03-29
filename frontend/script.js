@@ -1,4 +1,4 @@
-const WEATHER_API_URL = "http://127.0.0.1:5001/data";
+const WEATHER_API_URL = "http://127.0.0.1:5006/data";
 const NCR_CENTER = [28.6139, 77.2090];
 const NCR_DEFAULT_ZOOM = 9;
 const NCR_BOUNDS = {
@@ -38,15 +38,64 @@ const highestTempValue = document.getElementById("highestTempValue");
 const heatwaveCountValue = document.getElementById("heatwaveCountValue");
 const alertBanner = document.getElementById("alertBanner");
 const alertMessage = document.getElementById("alertMessage");
+const alertBox = document.getElementById("alerts");
+const modeToggleBtn = document.getElementById("modeToggleBtn");
 const trendChartCanvas = document.getElementById("trendChart");
 
 let indiaMap = null;
 let heatLayer = null;
 let legendControl = null;
 let trendChart = null;
+let markerLayer = null;
+let currentMode = "heat";
+let latestHeatmapRows = [];
+
+function updateModeToggleButton() {
+  if (!modeToggleBtn) {
+    return;
+  }
+
+  modeToggleBtn.textContent = currentMode === "heat" ? "Heatwave Mode" : "Coldwave Mode";
+}
+
+function toggleHeatmapMode() {
+  currentMode = currentMode === "heat" ? "cold" : "heat";
+  updateModeToggleButton();
+
+  if (latestHeatmapRows.length) {
+    renderHeatmap(latestHeatmapRows);
+  }
+}
+
+if (modeToggleBtn) {
+  modeToggleBtn.addEventListener("click", toggleHeatmapMode);
+  updateModeToggleButton();
+}
+
+function getLatitude(row) {
+  return Number(row.latitude ?? row.lat);
+}
+
+function getLongitude(row) {
+  return Number(row.longitude ?? row.lon);
+}
 
 function getWaveStatus(row) {
   return row.wave ?? row.wave_type ?? "Normal";
+}
+
+function getPredictionStatus(row) {
+  return row.prediction ?? "Normal";
+}
+
+function getPredictionColor(prediction) {
+  if (prediction === "Heatwave Likely") {
+    return "#ef4444";
+  }
+  if (prediction === "Warning") {
+    return "#f97316";
+  }
+  return "#22c55e";
 }
 
 function isHeatAlert(row) {
@@ -55,6 +104,13 @@ function isHeatAlert(row) {
 
 function renderAlertBanner(rows) {
   if (!alertBanner || !alertMessage) {
+    return;
+  }
+
+  const hasPredictedHeatwave = rows.some((row) => getPredictionStatus(row) === "Heatwave Likely");
+  if (hasPredictedHeatwave) {
+    alertBanner.hidden = false;
+    alertMessage.textContent = "⚠️ Heatwave expected soon";
     return;
   }
 
@@ -67,6 +123,43 @@ function renderAlertBanner(rows) {
 
   alertBanner.hidden = false;
   alertMessage.textContent = "⚠️ Heatwave Alert in NCR";
+}
+
+function renderHeatwaveAlerts(data) {
+  if (!alertBox) {
+    return;
+  }
+
+  alertBox.innerHTML = "";
+
+  data.forEach((city) => {
+    const temperature = Number(city.temperature);
+    if (!Number.isFinite(temperature) || temperature <= 40) {
+      return;
+    }
+
+    const district = city.district ?? "Unknown District";
+    const alertMsg = document.createElement("div");
+    alertMsg.innerHTML = `🔥 Heatwave in ${district}: ${temperature}°C`;
+    alertMsg.style.color = "red";
+    alertBox.appendChild(alertMsg);
+  });
+}
+
+function showAlert(data) {
+  const alertElement = document.getElementById("alert") || alertBanner;
+  if (!alertElement) {
+    return;
+  }
+
+  const hasHeatwave = data.some((city) => city.prediction === "Heatwave Likely");
+
+  if (hasHeatwave) {
+    alertElement.innerText = "⚠️ Heatwave expected soon in NCR!";
+    alertElement.style.display = "block";
+  } else {
+    alertElement.style.display = "none";
+  }
 }
 
 function isWithinNcrBounds(latitude, longitude) {
@@ -85,8 +178,8 @@ function isNcrDistrict(district) {
 
 function filterNcrRows(rows) {
   return rows.filter((row) => {
-    const latitude = Number(row.latitude);
-    const longitude = Number(row.longitude);
+    const latitude = getLatitude(row);
+    const longitude = getLongitude(row);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
       return false;
     }
@@ -127,11 +220,13 @@ function renderWeatherTable(rows) {
     const waveStatus = getWaveStatus(row);
     const alertClass = isHeatAlert(row) ? " row-alert" : "";
     const rowClass = `row-${waveStatus.toLowerCase()}${alertClass}`;
+    const latitude = getLatitude(row);
+    const longitude = getLongitude(row);
     html += `
       <tr class="${rowClass}">
         <td>${row.district ?? "-"}</td>
-        <td>${row.latitude ?? "-"}</td>
-        <td>${row.longitude ?? "-"}</td>
+        <td>${Number.isFinite(latitude) ? latitude : "-"}</td>
+        <td>${Number.isFinite(longitude) ? longitude : "-"}</td>
         <td>${row.temperature ?? "-"}</td>
         <td>${row.humidity ?? "-"}</td>
         <td>${row.predicted_temperature ?? "-"}</td>
@@ -179,20 +274,150 @@ function getHeatIntensity(temperature, minTemperature, maxTemperature) {
   return Math.max(0.2, Math.min(1, intensity));
 }
 
+function getModeHeatIntensity(temperature, minTemperature, maxTemperature) {
+  const baseIntensity = getHeatIntensity(temperature, minTemperature, maxTemperature);
+  if (currentMode === "cold") {
+    return Math.max(0.2, Math.min(1, 1 - baseIntensity + 0.2));
+  }
+
+  return baseIntensity;
+}
+
+function getHeatmapGradient() {
+  return {
+    0.2: "#2563eb",
+    0.4: "#22c55e",
+    0.6: "#fde047",
+    0.8: "#f97316",
+    1.0: "red",
+  };
+}
+
+function normalizeTemperatureIntensity(temperature) {
+  const tempValue = Number(temperature);
+  if (!Number.isFinite(tempValue)) {
+    return 0.15;
+  }
+
+  // Normalize by a realistic upper bound and boost high temperatures slightly.
+  return Math.max(0.15, Math.min(1, (tempValue / 50) * 1.1));
+}
+
 function prepareMapPoints(rows) {
   return rows
     .filter((row) => {
-      const latitude = Number(row.latitude);
-      const longitude = Number(row.longitude);
+      const latitude = getLatitude(row);
+      const longitude = getLongitude(row);
       return Number.isFinite(latitude) && Number.isFinite(longitude);
     })
     .map((row) => ({
       district: row.district ?? "Unknown District",
       wave: getWaveStatus(row),
+      prediction: getPredictionStatus(row),
+      humidity: row.humidity,
       temperature: row.temperature,
-      latitude: Number(row.latitude),
-      longitude: Number(row.longitude),
+      latitude: getLatitude(row),
+      longitude: getLongitude(row),
     }));
+}
+
+function getMarkerColorByPrediction(prediction) {
+  if (prediction === "Heatwave Likely" || prediction === "Warning" || prediction === "Normal") {
+    return getPredictionColor(prediction);
+  }
+
+  return "#22c55e";
+}
+
+function getMarkerAnimationClass(prediction) {
+  if (prediction === "Heatwave Likely") {
+    return "pulse-red";
+  }
+  if (prediction === "Warning") {
+    return "pulse-orange";
+  }
+  return "";
+}
+
+function getMarkerSize(prediction) {
+  if (prediction === "Heatwave Likely") {
+    return 22;
+  }
+  if (prediction === "Warning") {
+    return 20;
+  }
+  return 18;
+}
+
+function createTemperatureMarker(point) {
+  const prediction = point?.prediction ?? "Normal";
+  const markerColor = getMarkerColorByPrediction(prediction);
+  const animationClass = getMarkerAnimationClass(prediction);
+  const markerSize = getMarkerSize(prediction);
+
+  const html = `<span class="wx-marker ${animationClass}" style="--marker-color:${markerColor}; width:${markerSize}px; height:${markerSize}px;"></span>`;
+  const icon = L.divIcon({
+    className: "wx-marker-wrap",
+    html,
+    iconSize: [markerSize, markerSize],
+    iconAnchor: [markerSize / 2, markerSize / 2],
+    popupAnchor: [0, -Math.round(markerSize / 2)],
+  });
+
+  return L.marker([point.latitude, point.longitude], {
+    icon,
+    riseOnHover: true,
+    keyboard: false,
+  });
+}
+
+function getMarkerPopupHtml(point) {
+  const district = point.district ?? "Unknown District";
+  const temperature = Number.isFinite(Number(point.temperature)) ? `${point.temperature}` : "-";
+  const humidity = Number.isFinite(Number(point.humidity)) ? `${point.humidity}%` : "-";
+  const wave = point.wave ?? "Normal";
+  const prediction = point.prediction ?? "Normal";
+
+  return `
+    <b>${district}</b><br>
+    Temp: ${temperature}°C<br>
+    Humidity: ${humidity}<br>
+    Status: ${wave}<br>
+    🔮 Prediction: ${prediction}
+  `;
+}
+
+function renderCityMarkers(rows) {
+  initializeMap();
+  if (!indiaMap) {
+    console.warn("Map instance not available; skipping marker rendering.");
+    return;
+  }
+
+  if (!markerLayer) {
+    markerLayer = L.layerGroup().addTo(indiaMap);
+  }
+  markerLayer.clearLayers();
+
+  const mapPoints = prepareMapPoints(rows);
+  console.log(`Rendering ${mapPoints.length} city markers.`);
+
+  if (!mapPoints.length) {
+    indiaMap.setView(NCR_CENTER, NCR_DEFAULT_ZOOM);
+    return;
+  }
+
+  const bounds = L.latLngBounds([]);
+  mapPoints.forEach((point) => {
+    const marker = createTemperatureMarker(point);
+    marker.bindPopup(getMarkerPopupHtml(point));
+    marker.addTo(markerLayer);
+    bounds.extend([point.latitude, point.longitude]);
+  });
+
+  if (bounds.isValid()) {
+    indiaMap.fitBounds(bounds.pad(0.2));
+  }
 }
 
 function initializeMap() {
@@ -226,12 +451,14 @@ function renderHeatmap(rows) {
     return;
   }
 
-  if (heatLayer) {
-    indiaMap.removeLayer(heatLayer);
-  }
+  latestHeatmapRows = rows;
 
   const mapPoints = prepareMapPoints(rows);
   if (!mapPoints.length) {
+    if (heatLayer) {
+      indiaMap.removeLayer(heatLayer);
+      heatLayer = null;
+    }
     indiaMap.setView(NCR_CENTER, NCR_DEFAULT_ZOOM);
     return;
   }
@@ -243,29 +470,33 @@ function renderHeatmap(rows) {
     return;
   }
 
-  const minTemperature = Math.min(...temperatureValues);
-  const maxTemperature = Math.max(...temperatureValues);
-
   const heatPoints = mapPoints.map((point) => [
     point.latitude,
     point.longitude,
-    getHeatIntensity(point.temperature, minTemperature, maxTemperature),
+    normalizeTemperatureIntensity(point.temperature),
   ]);
 
-  heatLayer = L.heatLayer(heatPoints, {
-    radius: 34,
-    blur: 28,
-    minOpacity: 0.35,
-    gradient: {
-      0.25: "#1d4ed8",
-      0.6: "#facc15",
-      1.0: "#b91c1c",
-    },
-  }).addTo(indiaMap);
+  const heatmapGradient = getHeatmapGradient();
 
-  const bounds = L.latLngBounds(heatPoints.map((point) => [point[0], point[1]]));
-  if (bounds.isValid()) {
-    indiaMap.fitBounds(bounds.pad(0.2));
+  if (!heatLayer) {
+    heatLayer = L.heatLayer(heatPoints, {
+      radius: 50,
+      blur: 34,
+      minOpacity: 0.35,
+      gradient: heatmapGradient,
+    });
+  } else {
+    heatLayer.setOptions({
+      radius: 50,
+      blur: 34,
+      minOpacity: 0.35,
+      gradient: heatmapGradient,
+    });
+    heatLayer.setLatLngs(heatPoints);
+  }
+
+  if (!indiaMap.hasLayer(heatLayer)) {
+    heatLayer.addTo(indiaMap);
   }
 }
 
@@ -305,93 +536,89 @@ function renderTrendGraph(rows) {
     trendChart.destroy();
   }
 
-  const graphRows = rows.filter(
-    (row) => Number.isFinite(Number(row.temperature)) && Number.isFinite(Number(row.predicted_temperature))
-  );
+  const data = rows.filter((city) => Number.isFinite(Number(city.temperature)));
 
-  if (!graphRows.length) {
+  if (!data.length) {
     return;
   }
 
-  trendChart = new Chart(trendChartCanvas, {
+  const labels = data.map((city) => city.district ?? "Unknown");
+  const currentTemps = data.map((city) => Number(city.temperature));
+  const predictedTemps = currentTemps.map((t) => t + 0.8);
+
+  const ctx = document.getElementById("trendChart").getContext("2d");
+
+  trendChart = new Chart(ctx, {
     type: "line",
     data: {
-      labels: graphRows.map((row) => row.district ?? "Unknown"),
+      labels: labels,
       datasets: [
         {
           label: "Current Temp",
-          data: graphRows.map((row) => Number(row.temperature)),
+          data: currentTemps,
           borderColor: "#60a5fa",
-          backgroundColor: "rgba(96, 165, 250, 0.2)",
           borderWidth: 2,
-          tension: 0.35,
         },
         {
-          label: "Predicted Next Temp",
-          data: graphRows.map((row) => Number(row.predicted_temperature)),
+          label: "Predicted Temp",
+          data: predictedTemps,
           borderColor: "#f87171",
-          backgroundColor: "rgba(248, 113, 113, 0.2)",
           borderWidth: 2,
-          borderDash: [6, 4],
-          tension: 0.35,
         },
       ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: {
-            color: "#cbd5e1",
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: {
-            color: "#9fb3cc",
-          },
-          grid: {
-            color: "rgba(100, 116, 139, 0.2)",
-          },
-        },
-        y: {
-          ticks: {
-            color: "#9fb3cc",
-          },
-          grid: {
-            color: "rgba(100, 116, 139, 0.2)",
-          },
-        },
-      },
     },
   });
 }
 
 async function loadWeatherData() {
   try {
+    console.log(`Fetching weather data from ${WEATHER_API_URL}`);
     const response = await fetch(WEATHER_API_URL);
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
 
     const rows = await response.json();
+    if (!Array.isArray(rows)) {
+      throw new Error("Invalid API response: expected an array of weather objects.");
+    }
     console.log("WaveSense /data response:", rows);
+    console.log(`Received ${rows.length} weather rows from API.`);
 
     const ncrRows = filterNcrRows(rows);
-    const predictedRows = addPredictions(ncrRows);
+    console.log(`Filtered NCR rows: ${ncrRows.length}`);
+    const rowsToRender = ncrRows.length ? ncrRows : rows;
+    if (!ncrRows.length) {
+      console.warn("No rows matched NCR filter. Rendering all API rows instead.");
+    }
+
+    const predictedRows = addPredictions(rowsToRender);
+    const data = predictedRows;
+
+    const temps = data
+      .map((city) => Number(city.temperature))
+      .filter((temperature) => Number.isFinite(temperature));
+
+    const maxTemp = temps.length ? Math.max(...temps) : null;
+    document.getElementById("highestTempValue").innerText = maxTemp !== null ? `${maxTemp}°C` : "--";
+
+    const heatwaveCount = data.filter((city) => Number(city.temperature) >= 40).length;
+    document.getElementById("heatwaveCountValue").innerText = heatwaveCount;
 
     const mapData = prepareMapPoints(predictedRows);
     console.log("Map-ready points:", mapData);
 
     renderSummary(predictedRows);
     renderAlertBanner(predictedRows);
+    showAlert(data);
+    renderHeatwaveAlerts(predictedRows);
     renderWeatherCards(predictedRows);
     renderWeatherTable(predictedRows);
     renderHeatmap(predictedRows);
+    renderCityMarkers(predictedRows);
     renderTrendGraph(predictedRows);
   } catch (error) {
+    console.error("Failed to load weather data:", error);
     highestTempValue.textContent = "--";
     heatwaveCountValue.textContent = "0";
     if (alertBanner && alertMessage) {
@@ -400,12 +627,24 @@ async function loadWeatherData() {
     }
     weatherCards.innerHTML = `<p class="loading-text">Failed to load data: ${error.message}</p>`;
     weatherTableBody.innerHTML = `<tr><td colspan="7">Failed to load data: ${error.message}</td></tr>`;
+    if (alertBox) {
+      alertBox.innerHTML = "";
+    }
     if (trendChart) {
       trendChart.destroy();
       trendChart = null;
     }
-    console.error(error);
+    if (markerLayer) {
+      markerLayer.clearLayers();
+    }
   }
 }
 
-loadWeatherData();
+function loadData() {
+  return loadWeatherData();
+}
+
+loadData();
+setInterval(() => {
+  loadData();
+}, 300000); // refresh every 5 min

@@ -18,6 +18,8 @@
       <section id="alertBanner" class="alert-banner" hidden>
         <p id="alertMessage">⚠️ Heatwave Alert</p>
       </section>
+      <div id="alert" style="display:none; background:red; color:white; padding:10px;"></div>
+      <div id="alerts"></div>
 
       <header class="header card">
         <h1>WaveSense Dashboard</h1>
@@ -41,6 +43,9 @@
 
       <section class="card">
         <h2>NCR Heatmap</h2>
+        <div class="map-controls">
+          <button id="modeToggleBtn" class="heatmap-toggle-btn" type="button">Heatwave Mode</button>
+        </div>
         <div id="map" class="india-heatmap"></div>
       </section>
 
@@ -81,7 +86,7 @@
       </section>
 
     </main>
-
+   
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

@@ -168,6 +168,29 @@ body {
   border: 1px solid #314a73;
 }
 
+.heatmap-toggle-btn {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid #3b82f6;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.2);
+  color: #dbeafe;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.map-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.heatmap-toggle-btn:hover {
+  background: rgba(37, 99, 235, 0.32);
+  transform: translateY(-1px);
+}
+
 .trend-chart-wrap {
   position: relative;
   width: 100%;
@@ -201,6 +224,69 @@ body {
   box-shadow: 0 8px 20px rgba(2, 6, 23, 0.24);
   font-size: 0.82rem;
   padding: 0.35rem 0.5rem;
+}
+
+.wx-marker-wrap {
+  background: transparent;
+  border: 0;
+}
+
+.wx-marker {
+  position: relative;
+  display: block;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  background: var(--marker-color, #22c55e);
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.38);
+  will-change: transform, opacity;
+}
+
+.wx-marker::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid var(--marker-color, #22c55e);
+  opacity: 0;
+  transform: scale(1);
+}
+
+.pulse-red::after {
+  animation: pulse-strong 1.35s ease-out infinite;
+}
+
+.pulse-orange::after {
+  animation: pulse-soft 1.95s ease-out infinite;
+}
+
+@keyframes pulse-strong {
+  0% {
+    opacity: 0.62;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.35);
+  }
+}
+
+@keyframes pulse-soft {
+  0% {
+    opacity: 0.48;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.75);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
 }
 
 .heatmap-legend {
